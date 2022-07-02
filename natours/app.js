@@ -1,82 +1,35 @@
-const fs = require('fs')
 const express = require('express')
+const morgan = require('morgan')
+const tourRouter = require('./routes/tourRoutes')
+const userRouter = require('./routes/userRoutes')
 
 const app = express()
 
-// Middlewares
+// *** MIDDLEWARES SECTION ***
+
+app.use(morgan('dev'))
 app.use(express.json())
 
-const tours = JSON.parse(
-    fs.readFileSync(`${__dirname}/dev-data/data/tours-simple.json`)
-)
-
-// Routes
-app.get('/api/v1/tours', (req, res) => {
-    res.status(200).json({
-        status: 'success',
-        reuslts: tours.length,
-        data: { tours },
-    })
+// We can write custom middleware.
+// Because we didn't specify any route, this middleware will be applied to each and every single request.
+app.use((req, res, next) => {
+    console.log('Boom! I am a middleware.')
+    // Calling the next function is a must to prevent the middleware stack from getting stuck.
+    next()
 })
 
-app.get('/api/v1/tours/:id', (req, res) => {
-    console.log(req.params)
-
-    // We make sure that it turns into a number by multiplying it by 1.
-    const id = req.params.id * 1
-    const tour = tours.find((el) => el.id === id)
-
-    if (!tour) {
-        return res.status(404).json({
-            status: 'fail',
-            message: 'Invalid ID',
-        })
-    }
-
-    res.status(200).json({
-        status: 'success',
-        data: {
-            tour,
-        },
-    })
+app.use((req, res, next) => {
+    req.requestTime = new Date().toISOString()
+    next()
 })
 
-app.post('/api/v1/tours', (req, res) => {
-    // console.log(req.body)
+// *** MIDDLEWARES SECTION END ***
 
-    const newId = tours[tours.length - 1].id + 1
-    const newTour = Object.assign({ id: newId }, req.body)
+// *** ROUTES SECTION ***
 
-    tours.push(newTour)
-    fs.writeFile(
-        `${__dirname}/dev-data/data/tours-simple.json`,
-        JSON.stringify(tours),
-        (err) => {
-            res.status(201).json({
-                status: 'success',
-                data: {
-                    tour: newTour,
-                },
-            })
-        }
-    )
-})
+app.use('/api/v1/tours', tourRouter)
+app.use('/api/v1/users', userRouter)
 
-app.delete('/api/v1/tours/:id', (req, res) => {
-    if (req.params.id * 1 > tours.length) {
-        return res.status(404).json({
-            status: 'fail',
-            message: 'Invalid ID',
-        })
-    }
+// *** ROUTES SECTION END ***
 
-    res.status(204).json({
-        status: 'success',
-        data: null,
-    })
-})
-
-const port = 3000
-app.listen(port, () => {
-    console.log(`App is running on port ${port}...`)
-})
+module.exports = app
