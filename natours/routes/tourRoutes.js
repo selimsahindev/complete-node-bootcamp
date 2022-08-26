@@ -1,18 +1,22 @@
 const express = require('express');
-const {
-    getAllTours,
-    getTour,
-    createTour,
-    updateTour,
-    deleteTour,
-} = require('../controllers/tourController');
+const tourController = require('../controllers/tourController');
 
 const router = express.Router();
 
 // param() middleware function is used to add the callback triggers to route parameters.
 // router.param('id', checkID);
 
-router.route('/').get(getAllTours).post(createTour);
-router.route('/:id').get(getTour).patch(updateTour).delete(deleteTour);
+router
+    .route('/top-5-cheap')
+    .get(tourController.aliasTopTours, tourController.getAllTours);
+router
+    .route('/')
+    .get(tourController.getAllTours)
+    .post(tourController.createTour);
+router
+    .route('/:id')
+    .get(tourController.getTour)
+    .patch(tourController.updateTour)
+    .delete(tourController.deleteTour);
 
 module.exports = router;

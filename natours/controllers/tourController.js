@@ -5,7 +5,14 @@ const Tour = require('../models/tourModel');
 //     fs.readFileSync(`${__dirname}/../dev-data/data/tours-simple.json`)
 // );
 
-const getAllTours = async (req, res) => {
+exports.aliasTopTours = (req, res, next) => {
+    req.query.limit = '5';
+    req.query.sort = '-ratingsAverage,price';
+    req.query.fields = 'name,price,ratingsAverage,summary,difficulty';
+    next();
+};
+
+exports.getAllTours = async (req, res) => {
     try {
         // 1.A) FILTERING
         // Destructure and create a new copy object.
@@ -73,7 +80,7 @@ const getAllTours = async (req, res) => {
     }
 };
 
-const getTour = async (req, res) => {
+exports.getTour = async (req, res) => {
     try {
         const tour = await Tour.findById(req.params.id);
         // This is the shorthand for writing:
@@ -93,7 +100,7 @@ const getTour = async (req, res) => {
     }
 };
 
-const createTour = async (req, res) => {
+exports.createTour = async (req, res) => {
     try {
         // We can create new tour like this
         // const newTour = new Tour({});
@@ -116,7 +123,7 @@ const createTour = async (req, res) => {
     }
 };
 
-const updateTour = async (req, res) => {
+exports.updateTour = async (req, res) => {
     try {
         const updatedTour = await Tour.findByIdAndUpdate(
             req.params.id,
@@ -141,7 +148,7 @@ const updateTour = async (req, res) => {
     }
 };
 
-const deleteTour = async (req, res) => {
+exports.deleteTour = async (req, res) => {
     try {
         await Tour.findByIdAndDelete(req.params.id);
 
@@ -155,12 +162,4 @@ const deleteTour = async (req, res) => {
             message: err,
         });
     }
-};
-
-module.exports = {
-    getAllTours,
-    getTour,
-    createTour,
-    updateTour,
-    deleteTour,
 };
