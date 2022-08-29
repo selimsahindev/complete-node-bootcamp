@@ -1,4 +1,5 @@
 const Tour = require('../models/tourModel');
+const APIFeatures = require('../utils/apiFeatures');
 
 // Read the dummy data from local file
 // const tours = JSON.parse(
@@ -14,56 +15,14 @@ exports.aliasTopTours = (req, res, next) => {
 
 exports.getAllTours = async (req, res) => {
     try {
-        // 1.A) FILTERING
-        // Destructure and create a new copy object.
-        let queryObject = { ...req.query };
-        const excludedFields = ['page', 'sort', 'limit', 'fields'];
-        // Delete excluded fields.
-        excludedFields.forEach((el) => delete queryObject[el]);
-
-        // 1.B) ADVANCED FILTERING
-        let queryString = JSON.stringify(queryObject);
-        queryString = queryString.replace(
-            /\b(gte|gt|lte|lt)\b/g,
-            (match) => `$${match}`
-        );
-        queryObject = JSON.parse(queryString);
-
-        let query = Tour.find(queryObject);
-
-        // 2) SORTING
-        if (req.query.sort) {
-            const sortBy = req.query.sort.split(',').join(' ');
-            query = query.sort(sortBy);
-        }
-
-        // 3) FIELD LIMITING
-        if (req.query.fields) {
-            const fields = req.query.fields.split(',').join(' ');
-            query = query.select(fields);
-        } else {
-            // For default, we want to exclude __v field. (We used minus before the field name).
-            query = query.select('-__v');
-        }
-
-        // 4) PAGINATION
-        // Multiplying by one is a nice and easy trick to convert the string to a number.
-        // '|| 1' at the end indicates the 1 as a default value.
-        const page = req.query.page * 1 || 1;
-        const limit = req.query.limit * 1 || 100;
-        const skip = (page - 1) * limit;
-        query.skip(skip).limit(limit);
-
-        // Throw an error if the page is not exists.
-        if (req.query.page) {
-            const numberOfTours = await Tour.countDocuments();
-            if (skip > numberOfTours) {
-                throw new Error('This page does not exist.');
-            }
-        }
-
         // EXECUTE QUERY
-        const tours = await query;
+        const features = new APIFeatures(Tour.find(), req.query)
+            .filter()
+            .sort()
+            .limitFields()
+            .paginate();
+
+        const tours = await features.query;
 
         res.status(200).json({
             status: 'Success.',
@@ -75,7 +34,7 @@ exports.getAllTours = async (req, res) => {
     } catch (err) {
         res.status(404).json({
             status: 'Fail.',
-            message: err,
+            message: err.message,
         });
     }
 };
